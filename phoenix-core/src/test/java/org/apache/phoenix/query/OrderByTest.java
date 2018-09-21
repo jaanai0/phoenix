@@ -18,10 +18,12 @@
 package org.apache.phoenix.query;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -99,4 +101,25 @@ public class OrderByTest extends BaseConnectionlessQueryTest {
             first.getRowOffset(), SortOrder.DESC);
         assertEquals(1451913111631L, millisDeserialized);
   }
+
+    @Test
+    public void testNotExistsCol() throws SQLException {
+        Connection conn = DriverManager.getConnection(getUrl());
+        Statement statement = conn.createStatement();
+        statement.execute("drop table \"test_truncate\"");
+        statement.execute("create table \"test_truncate\"(\"ROW\" varchar primary key,\"f\".\"0\" varchar,\"f\".\"1\" varchar)");
+        try {
+            statement.executeQuery("select * from \"test_truncate\" order by TO_NUMBER(\"f\".\"1\")");
+            assertTrue(true);
+        } catch (Exception e) {
+            assertTrue(false);
+        }
+
+        try {
+            statement.executeQuery("select * from \"test_truncate\" order by TO_NUMBER(\"f.1\")");
+            assertTrue(false);
+        }  catch (Exception e) {
+            assertTrue(true);
+        }
+    }
 }

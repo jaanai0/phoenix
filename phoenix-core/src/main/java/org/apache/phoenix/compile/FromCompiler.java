@@ -866,7 +866,7 @@ public class FromCompiler {
             String fullTableName = SchemaUtil.getTableName(schemaName, tableName);
             List<TableRef> tableRefs = tableMap.get(fullTableName);
             if (tableRefs.size() == 0) {
-                throw new TableNotFoundException(fullTableName);
+                throw new TableNotFoundException(fullTableName == null ? "" : fullTableName);
             } else if (tableRefs.size() > 1) {
                 throw new AmbiguousTableException(tableName);
             } else {
@@ -1026,7 +1026,12 @@ public class FromCompiler {
                 colRef = super.resolveColumn(schemaName, tableName, colName);
             } catch (ColumnNotFoundException e) {
                 // This could be a ColumnRef for local index data column.
-                TableRef tableRef = isLocalIndex ? super.getTables().get(0) : super.resolveTable(schemaName, tableName);
+                TableRef tableRef;
+                try {
+                    tableRef = isLocalIndex ? super.getTables().get(0) : super.resolveTable(schemaName, tableName);
+                } catch (TableNotFoundException tne) {
+                    throw e;
+                }
                 if (tableRef.getTable().getIndexType() == IndexType.LOCAL) {
                     try {
                         TableRef parentTableRef = super.resolveTable(
