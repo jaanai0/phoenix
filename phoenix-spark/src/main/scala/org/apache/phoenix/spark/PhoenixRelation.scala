@@ -20,13 +20,13 @@ package org.apache.phoenix.spark
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.apache.spark.sql.sources._
 import org.apache.phoenix.util.StringUtil.escapeStringConstant
 import org.apache.phoenix.util.SchemaUtil
 
 case class PhoenixRelation(tableName: String, zkUrl: String, dateAsTimestamp: Boolean = false)(@transient val sqlContext: SQLContext)
-    extends BaseRelation with PrunedFilteredScan {
+    extends BaseRelation with PrunedFilteredScan with InsertableRelation {
 
   /*
     This is the buildScan() implementing Spark's PrunedFilteredScan.
@@ -119,5 +119,11 @@ case class PhoenixRelation(tableName: String, zkUrl: String, dateAsTimestamp: Bo
 
   private def isClass(obj: Any, className: String) = {
     className.equals(obj.getClass().getName())
+  }
+
+  //Unsupported some tables which have schema of case sensitive fields name.
+  override def insert(data: DataFrame, overwrite: Boolean): Unit = {
+    val parameters = Map[String, String]("table" -> tableName, "zkUrl" -> zkUrl)
+    data.saveToPhoenix(parameters)
   }
 }

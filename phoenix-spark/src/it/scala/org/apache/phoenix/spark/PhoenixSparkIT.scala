@@ -680,4 +680,32 @@ class PhoenixSparkIT extends AbstractPhoenixSparkIT {
     df.count() shouldEqual 1
   }
 
+  test("Inserting into an RDD-based table") {
+    val sqlContext = new SQLContext(sc)
+    val df = sqlContext.load("org.apache.phoenix.spark", Map("table" -> "table1",
+      "zkUrl" -> quorumAddress))
+
+    df.registerTempTable("table1")
+
+    {
+      val sqlRdd = sqlContext.sql("SELECT * FROM table1")
+      val count = sqlRdd.count()
+      count shouldEqual 2L
+    }
+
+    {
+      sqlContext.sql("insert into table1 values(3,'3')")
+      val sqlRdd = sqlContext.sql("SELECT * FROM table1")
+      val count = sqlRdd.count()
+      count shouldEqual 3L
+    }
+
+    {
+      sqlContext.sql("insert into table1 values(4, '4')")
+      val sqlRdd = sqlContext.sql("SELECT * FROM table1")
+      val count = sqlRdd.count()
+      count shouldEqual 4L
+    }
+  }
+
 }
